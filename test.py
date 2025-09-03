@@ -5,8 +5,8 @@ cfg.gy = -9.81
 cfg.iterations = 20
 
 w = av.World(cfg)
-w.add_box(0, -0.5, 50, 1, density=1.0, fixed=True, friction=0.6)  # ground
-w.add_box(0,  0.5,  1, 1, density=1.0, fixed=False, friction=0.6)
+w.add_box(0, -0.5, 1, 1, density=1.0, fixed=True, friction=0.6)  # ground
+w.add_box(0,  0.9,  1, 1, density=1.0, fixed=False, friction=0.6)
 
 for _ in range(50):
     w.step(1/60)

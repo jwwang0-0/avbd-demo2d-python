@@ -1,9 +1,15 @@
+#include <cmath>
 #include "api_shim.hpp"
 
 #include "solver.h"   // Solver, Rigid, etc.
 #include "maths.h"    // float2, float3, etc.
 
 #include <vector>
+
+static inline void rot2(double c, double s, double x, double y, double& ox, double& oy) {
+    ox = c*x - s*y;
+    oy = s*x + c*y;
+}
 
 struct AvbdWorld::Impl {
     Solver world;                   // from solver.h
@@ -61,4 +67,32 @@ std::vector<AvbdBodyState> AvbdWorld::get_states() const {
         });
     }
     return out;
+}
+
+std::vector<std::vector<AvbdPt>> AvbdWorld::get_world_vertices() const {
+    std::vector<std::vector<AvbdPt>> polys;
+    polys.reserve(p_->order.size());
+    for (const Rigid* b : p_->order) {
+        // Current demo uses rectangles of size (w,h) in local coords
+        double w = b->size.x;
+        double h = b->size.y;
+        double hx = 0.5 * w, hy = 0.5 * h;
+
+        // local rect CCW
+        double lx[4] = {-hx, +hx, +hx, -hx};
+        double ly[4] = {-hy, -hy, +hy, +hy};
+
+        double c = std::cos(b->position.z);
+        double s = std::sin(b->position.z);
+
+        std::vector<AvbdPt> poly;
+        poly.reserve(4);
+        for (int i=0;i<4;++i) {
+            double wx, wy;
+            rot2(c, s, lx[i], ly[i], wx, wy);
+            poly.push_back({ b->position.x + wx, b->position.y + wy });
+        }
+        polys.push_back(std::move(poly));
+    }
+    return polys;
 }

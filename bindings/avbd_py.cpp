@@ -19,6 +19,10 @@ PYBIND11_MODULE(avbd2d, m) {
         .def_readonly("vy", &AvbdBodyState::vy)
         .def_readonly("omega", &AvbdBodyState::omega);
 
+    py::class_<AvbdPt>(m, "Pt")
+        .def_readonly("x", &AvbdPt::x)
+        .def_readonly("y", &AvbdPt::y);
+
     py::class_<AvbdWorld>(m, "World")
         .def(py::init<const AvbdWorldConfig&>(), py::arg("config"))
         .def("add_box", &AvbdWorld::add_box,
@@ -26,5 +30,7 @@ PYBIND11_MODULE(avbd2d, m) {
              py::arg("density")=1.0, py::arg("fixed")=false,
              py::arg("friction")=0.6)
         .def("step", &AvbdWorld::step, py::arg("dt"))
-        .def("get_states", &AvbdWorld::get_states);
+        .def("get_states", &AvbdWorld::get_states)
+        .def("get_world_vertices", &AvbdWorld::get_world_vertices);
+       
 }

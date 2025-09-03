@@ -2,6 +2,9 @@
 #include <vector>
 #include <memory>
 
+
+struct AvbdPt { double x, y; }; // for animation
+
 struct AvbdWorldConfig {
     double gx{0.0};      // not used by this solver (gravity is along Y)
     double gy{-9.81};    // mapped to Solver::gravity (acts on +Y; negative = downward)
@@ -27,6 +30,9 @@ public:
     void step(double dt);
 
     std::vector<AvbdBodyState> get_states() const;
+
+    // animation
+    std::vector<std::vector<AvbdPt>> get_world_vertices() const;
 
 private:
     struct Impl;
