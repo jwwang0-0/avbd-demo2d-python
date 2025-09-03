@@ -1,61 +1,55 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.18)
+project(avbd2d_python LANGUAGES CXX)
 
-# Project Name
-project(avbd_demo2d)
+# Use modern Python discovery in pybind11 (silences a warning)
+set(PYBIND11_FINDPYTHON ON)
+find_package(pybind11 REQUIRED)
 
-# Set C++ Standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(AVBD_DIR ${CMAKE_SOURCE_DIR}/third_party/avbd-demo2d)
 
-# Automatically collect all source files from the "source" directory
-file(GLOB_RECURSE SOURCES "source/*.cpp" "source/*.h")
+# Collect all core sources EXCEPT the demo entry point
+file(GLOB AVBD_SOURCES CONFIGURE_DEPENDS "${AVBD_DIR}/source/*.cpp")
+list(FILTER AVBD_SOURCES EXCLUDE REGEX ".*/main\\.cpp")
 
-# Add Executable
-add_executable(${PROJECT_NAME} ${SOURCES})
-
-# Include SDL2 first (ImGui needs it)
-add_subdirectory(external/SDL)
-
-# Add ImGui as a separate project
-set(IMGUI_PROJECT_NAME "imgui")
-
-file(GLOB IMGUI_SRC
-    external/imgui/*.cpp
-    external/imgui/backends/imgui_impl_sdl2.cpp
-    external/imgui/backends/imgui_impl_opengl3.cpp
-)
-
-add_library(${IMGUI_PROJECT_NAME} STATIC ${IMGUI_SRC})
-
-# Set include directories for ImGui
-target_include_directories(${IMGUI_PROJECT_NAME} PUBLIC
-    external/imgui
-    external/imgui/backends
-    external/SDL/include
-)
-
-# Link ImGui with SDL2
-target_link_libraries(${IMGUI_PROJECT_NAME} PUBLIC SDL2::SDL2 SDL2::SDL2main)
-
-# Link the main project with SDL2 and ImGui
-target_include_directories(${PROJECT_NAME} PRIVATE external/SDL/include)
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2 SDL2::SDL2main ${IMGUI_PROJECT_NAME})
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -s USE_SDL=2 -s USE_WEBGL2=1 -s ALLOW_MEMORY_GROWTH=1 -s SINGLE_FILE=1 -s LEGACY_GL_EMULATION=1 --shell-file ../source/shell.html")
-    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+# --- Core static lib (demo's solver) ---
+add_library(avbd_core STATIC ${AVBD_SOURCES})
+target_include_directories(avbd_core PUBLIC ${AVBD_DIR}/source)
+target_compile_features(avbd_core PUBLIC cxx_std_17)
+if (MSVC)
+  target_compile_options(avbd_core PRIVATE /W4 /EHsc)
 else()
-    # Find and Link OpenGL
-    find_package(OpenGL REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
+  target_compile_options(avbd_core PRIVATE -Wall -Wextra -Wno-unused-parameter)
 endif()
 
-# Copy SDL2.dll to the output folder on Windows
-if(WIN32)
-    add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:SDL2::SDL2>    # Path to the built SDL2.dll
-            $<TARGET_FILE_DIR:${PROJECT_NAME}> # Output directory of the executable
-    )
+# Link OpenGL: Windows needs opengl32; other OS use OpenGL::GL
+if (WIN32)
+  target_link_libraries(avbd_core PRIVATE opengl32)
+else()
+  find_package(OpenGL REQUIRED)
+  target_link_libraries(avbd_core PRIVATE OpenGL::GL)
 endif()
+
+# --- Tiny API shim exposing a clean interface ---
+add_library(avbd_api STATIC bindings/api_shim.cpp)
+target_include_directories(avbd_api PUBLIC bindings ${AVBD_DIR}/source)
+target_link_libraries(avbd_api PRIVATE avbd_core)
+
+# --- Python module ---
+pybind11_add_module(avbd2d MODULE bindings/avbd_py.cpp)
+target_link_libraries(avbd2d PRIVATE avbd_api)
+# On Windows also link the module to OpenGL in case of transitive refs
+if (WIN32)
+  target_link_libraries(avbd2d PRIVATE opengl32)
+else()
+  target_link_libraries(avbd2d PRIVATE OpenGL::GL)
+endif()
+
+# Install the Python extension into the wheel root
+# (this is the crucial bit so the wheel actually contains avbd2d.pyd)
+install(TARGETS avbd2d
+        LIBRARY DESTINATION .
+        RUNTIME DESTINATION .
+        ARCHIVE DESTINATION .)
+
+# Produce avbd2d.pyd without 'lib' prefix
+set_target_properties(avbd2d PROPERTIES PREFIX "")
