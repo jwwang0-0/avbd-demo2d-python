@@ -1,4 +1,5 @@
 #include <cmath>
+#include <stdexcept>
 #include "api_shim.hpp"
 
 #include "solver.h"   // Solver, Rigid, etc.
@@ -44,6 +45,13 @@ int AvbdWorld::add_box(double cx, double cy, double w, double h,
 
     p_->order.push_back(body);
     return static_cast<int>(p_->order.size() - 1);
+}
+
+int AvbdWorld::add_trapezoid(double cx, double cy,
+                             double top_w, double bottom_w, double h,
+                             double density, bool fixed, double friction) {
+    // We'll wire this after polygon support lands in the core:
+    throw std::runtime_error("add_trapezoid not implemented yet in core.");
 }
 
 void AvbdWorld::step(double dt) {

@@ -12,6 +12,11 @@ for _ in range(50):
     w.step(1/60)
     print([(b.x, b.y, b.theta, b.vx, b.vy, b.omega) for b in w.get_states()[:2]])
 
+try:
+    w.add_trapezoid(0,2, 0.6, 1.2, 1.0)
+except Exception as e:
+    print("OK (expected):", e)
+    
 # print(w.get_states())
 # print(len(w.get_states()), "bodies")
 # print([(b.x, b.y, b.theta) for b in w.get_states()[:2]])

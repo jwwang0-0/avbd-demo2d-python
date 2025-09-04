@@ -26,6 +26,11 @@ public:
     int add_box(double cx, double cy, double w, double h,
                 double density = 1.0, bool fixed = false,
                 double friction = 0.6);
+    
+    int add_trapezoid(double cx, double cy,
+                  double top_w, double bottom_w, double h,
+                  double density = 1.0, bool fixed = false,
+                  double friction = 0.6);
 
     void step(double dt);
 

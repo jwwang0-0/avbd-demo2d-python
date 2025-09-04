@@ -29,6 +29,10 @@ PYBIND11_MODULE(avbd2d, m) {
              py::arg("cx"), py::arg("cy"), py::arg("w"), py::arg("h"),
              py::arg("density")=1.0, py::arg("fixed")=false,
              py::arg("friction")=0.6)
+        .def("add_trapezoid", &AvbdWorld::add_trapezoid,
+             py::arg("cx"), py::arg("cy"),
+             py::arg("top_w"), py::arg("bottom_w"), py::arg("h"),
+             py::arg("density")=1.0, py::arg("fixed")=false, py::arg("friction")=0.6)
         .def("step", &AvbdWorld::step, py::arg("dt"))
         .def("get_states", &AvbdWorld::get_states)
         .def("get_world_vertices", &AvbdWorld::get_world_vertices);

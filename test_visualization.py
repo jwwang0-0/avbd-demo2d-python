@@ -2,6 +2,7 @@ import avbd2d as av
 from matplotlib import pyplot as plt
 from matplotlib import animation
 from matplotlib.patches import Polygon
+import time
 
 cfg = av.WorldConfig(); cfg.gy = -9.81; cfg.iterations = 20
 w = av.World(cfg)
@@ -11,10 +12,13 @@ for i in range(5):
 
 # Run & capture frames
 frames = []
+start_time = time.time()
 for _ in range(300):
     w.step(1/60)
     frames.append(w.get_world_vertices())
+used_time = time.time() - start_time
 
+print(f"Used Time is {used_time}")
 # Animate
 fig, ax = plt.subplots()
 ax.set_aspect("equal")
